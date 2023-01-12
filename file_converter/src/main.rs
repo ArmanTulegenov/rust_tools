@@ -83,8 +83,6 @@ async fn main() -> io::Result<()> {
         .serve(router)
         .await;
 
-    //prepare(dir_path, prefix, output).await;
-
     Ok(())
 }
 
