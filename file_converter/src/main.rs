@@ -17,57 +17,67 @@ use tokio::sync::mpsc::Sender;
 
 use salvo::prelude::*;
 
+/// model to parse json files and export to csv
+/// dir_path - directory to parse files
+/// prefix - prefix of json file names to select
+/// output - path to output csv file
+/// filter - to filter json fields
 #[derive(Serialize, Deserialize, Extractible, Debug)]
 #[extract(default_source(from = "body", format = "json"))]
-struct ScanRequest<'a> {
+struct PrepareStatisticsRequest<'a> {
     dir_path: &'a str,
     prefix: &'a str,
     output: &'a str,
     filter: Option<Vec<String>>,
 }
 
+/// model to scan folder and find json files
+/// mask - mask to extract
+///
 #[derive(Serialize, Deserialize, Extractible, Debug)]
 #[extract(default_source(from = "body", format = "json"))]
-struct PrepareDataRequest<'a> {
+struct ScanDirectoriesRequest<'a> {
     path: &'a str,
 }
 
+/// parse json files and export to csv
+/// retrieves PrepareStatisticsRequest model
 #[handler]
-async fn scan(
+async fn generate_statistics(
     req: &mut Request,
     depot: &mut Depot,
     res: &mut Response,
 ) -> Result<(), anyhow::Error> {
-    let scan_request: ScanRequest = req.extract().await.unwrap();
-    // if let Ok(mut entries) = fs::read_dir(scan_request.path).await {
-    //     while let Ok(entry) = entries.next_entry().await {
-    //         if let Some(dir_entry) = entry {
-    //             println!("{:?}: {}", dir_entry.file_name(), dir_entry.ino());
-    //         }
-    //     }
-    // }
+    let statistics_request: PrepareStatisticsRequest = req.extract().await.unwrap();
 
-    let path = PathBuf::from(scan_request.dir_path);
-    let prefix = String::from(scan_request.prefix);
-    let output = PathBuf::from(scan_request.output);
-    let filter = scan_request.filter;
+    let path = PathBuf::from(statistics_request.dir_path);
+    let prefix = String::from(statistics_request.prefix);
+    let output = PathBuf::from(statistics_request.output);
+    let filter = statistics_request.filter;
 
     tokio::spawn(scan_folders(path, prefix, output, filter));
-    res.render("Hello world");
-    Err(anyhow::anyhow!("anyhow error"))
+    res.render("Completed");
+    Ok(())
 }
 
 #[handler]
-async fn prepare_data(req: &mut Request) -> String {
-    let prepare_request: PrepareDataRequest = req.extract().await.unwrap();
-    format!("{:#?}\r\n", prepare_request)
+async fn scan_directories(req: &mut Request) -> String {
+    let scan_request: ScanDirectoriesRequest = req.extract().await.unwrap();
+    if let Ok(mut entries) = fs::read_dir(scan_request.path).await {
+        while let Ok(entry) = entries.next_entry().await {
+            if let Some(dir_entry) = entry {
+                println!("{:?}: {}", dir_entry.file_name(), dir_entry.ino());
+            }
+        }
+    }
+    String::from("Completed")
 }
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let router = Router::new()
-        .push(Router::new().path("scan").post(scan))
-        .push(Router::new().path("prepare").post(prepare_data));
+        .push(Router::new().path("scan").post(generate_statistics))
+        .push(Router::new().path("prepare").post(scan_directories));
 
     Server::new(TcpListener::bind("127.0.0.1:7878"))
         .serve(router)
