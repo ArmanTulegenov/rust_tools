@@ -1,53 +1,89 @@
-use std::collections::HashSet;
-use std::io::{BufReader, Read, Write};
-use std::path::PathBuf;
-
 use async_recursion::async_recursion;
 use clap::{arg, command, value_parser, ArgAction};
 use flate2::read::GzDecoder;
 use futures::stream::FuturesUnordered;
 use itertools::Itertools;
+use salvo::macros::Extractible;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashSet;
 use std::fs::File;
+use std::io::{BufReader, Read, Write};
+use std::path::{self, PathBuf};
 use tokio::fs::{self};
 use tokio::io;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
 
+use salvo::prelude::*;
+
+#[derive(Serialize, Deserialize, Extractible, Debug)]
+#[extract(default_source(from = "body", format = "json"))]
+struct ScanRequest<'a> {
+    dir_path: &'a str,
+    prefix: &'a str,
+    output: &'a str,
+    filter: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, Extractible, Debug)]
+#[extract(default_source(from = "body", format = "json"))]
+struct PrepareDataRequest<'a> {
+    path: &'a str,
+}
+
+#[handler]
+async fn scan(
+    req: &mut Request,
+    depot: &mut Depot,
+    res: &mut Response,
+) -> Result<(), anyhow::Error> {
+    let scan_request: ScanRequest = req.extract().await.unwrap();
+    // if let Ok(mut entries) = fs::read_dir(scan_request.path).await {
+    //     while let Ok(entry) = entries.next_entry().await {
+    //         if let Some(dir_entry) = entry {
+    //             println!("{:?}: {}", dir_entry.file_name(), dir_entry.ino());
+    //         }
+    //     }
+    // }
+
+    let path = PathBuf::from(scan_request.dir_path);
+    let prefix = String::from(scan_request.prefix);
+    let output = PathBuf::from(scan_request.output);
+    let filter = scan_request.filter;
+
+    tokio::spawn(scan_folders(path, prefix, output, filter));
+    res.render("Hello world");
+    Err(anyhow::anyhow!("anyhow error"))
+}
+
+#[handler]
+async fn prepare_data(req: &mut Request) -> String {
+    let prepare_request: PrepareDataRequest = req.extract().await.unwrap();
+    format!("{:#?}\r\n", prepare_request)
+}
+
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    let matches = command!() // requires `cargo` feature
-        .arg(
-            arg!(
+    let router = Router::new()
+        .push(Router::new().path("scan").post(scan))
+        .push(Router::new().path("prepare").post(prepare_data));
 
-                -d --directory <DIRECTORY> "A path to directory with json files."
-            )
-            .value_parser(value_parser!(PathBuf)),
-        )
-        .arg(
-            arg!(
+    Server::new(TcpListener::bind("127.0.0.1:7878"))
+        .serve(router)
+        .await;
 
-                -o --output <OUTPUT> "A path to csv file to extract json."
-            )
-            .value_parser(value_parser!(PathBuf)),
-        )
-        .arg(arg!(
-            -p --prefix <PREFIX> "A file name prefix to filter."
-        ))
-        .arg(
-            arg!(
-                -f --filter <FILTER> "Json fields to filter, e.g -f gtp-handler -f gx-client."
-            )
-            .action(ArgAction::Set)
-            .num_args(0..)
-            .required(false),
-        )
-        .get_matches();
+    //prepare(dir_path, prefix, output).await;
 
-    let dir_path: &PathBuf = matches.get_one::<PathBuf>("directory").unwrap();
-    let prefix: &str = matches.get_one::<String>("prefix").unwrap();
-    let output: &PathBuf = matches.get_one::<PathBuf>("output").unwrap();
+    Ok(())
+}
 
+async fn scan_folders(
+    dir_path: PathBuf,
+    prefix: String,
+    output: PathBuf,
+    filter: Option<Vec<String>>,
+) -> io::Result<()> {
     let mut q: Vec<PathBuf> = vec![];
 
     let mut entries = fs::read_dir(&dir_path.as_path()).await?;
@@ -60,8 +96,9 @@ async fn main() -> io::Result<()> {
 
     let json_paths: HashSet<&str> = HashSet::new();
 
-    if let Some(filter_value) = matches.get_many::<String>("filter") {
+    if let Some(filter_value) = filter {
         let filters = filter_value
+            .iter()
             .map(|v| String::from(v.as_str()))
             .collect::<Vec<_>>();
         dispatch(q, filters, json_paths, &output).await;
@@ -110,6 +147,16 @@ async fn dispatch(
             futures::future::join_all(tasks).await;
         }
         for leftover in files.into_buffer() {
+            if !is_header_extracted {
+                try_to_extract_header_and_validate_json_paths(
+                    leftover.clone(),
+                    tx1.clone(),
+                    &filters,
+                )
+                .await;
+                is_header_extracted = true;
+            }
+
             try_to_extract_and_process(leftover, tx1.clone(), filters.clone()).await;
         }
     });
@@ -159,7 +206,7 @@ async fn try_to_extract_and_process(
             d.read_to_string(&mut s)?;
             process_text_lines(s.as_str(), &sender, &filter).await;
         } else {
-            let file = File::open("foo.txt")?;
+            let file = File::open(&entry)?;
             let mut reader = BufReader::new(file);
             let mut s = String::new();
             reader.read_to_string(&mut s)?;
@@ -179,19 +226,15 @@ async fn process_text_lines_to_extract_header(
         let root: Value = serde_json::from_str(line)?;
         for filter in filters {
             if let Some(found_value) = root.pointer(filter) {
-                extract_json_headers(&found_value, &"", 0, &mut headers).await;
+                extract_json_headers(filter.as_str(), &found_value, &"", 0, &mut headers).await;
             }
         }
 
         let mut vector_of_headers = headers
             .into_iter()
             .map(|elem| {
-                if let Some(position) = elem.rfind("/") {
-                    let length = elem.len();
-                    elem.chars()
-                        .skip(position + 1)
-                        .take(length - position - 1)
-                        .collect()
+                if let Some(_) = elem.find("/") {
+                    (&elem[1..]).replace("/", "_")
                 } else {
                     elem
                 }
@@ -228,6 +271,7 @@ async fn process_text_lines(
 
 #[async_recursion]
 async fn extract_json_headers(
+    filter: &str,
     v: &Value,
     prefix: &str,
     index: usize,
@@ -236,7 +280,7 @@ async fn extract_json_headers(
     match v {
         Value::Array(values) => {
             for (i, value) in values.iter().enumerate() {
-                extract_json_headers(&value, prefix, i + 1, headers).await;
+                extract_json_headers(filter, &value, prefix, i + 1, headers).await;
             }
         }
         Value::Object(map) => {
@@ -251,12 +295,13 @@ async fn extract_json_headers(
                 if index != 0 {
                     new_prefix = new_prefix + index.to_string().as_str();
                 }
-                extract_json_headers(&value, new_prefix.as_str(), index, headers).await;
+                extract_json_headers(filter, &value, new_prefix.as_str(), index, headers).await;
             }
         }
         _ => {
-            println!("{:?}", prefix);
-            headers.push(prefix.to_string());
+            let full_prefix = filter.to_owned() + prefix;
+            println!("{:?}", full_prefix);
+            headers.push(full_prefix.to_string());
         }
     }
     Ok(())

@@ -1,0 +1,114 @@
+/gx-client
+  /values
+    /Fail to send CCR-I to PCRF
+    /Fail to send CCR-T to PCRF
+    /Fail to send CCR-U to PCRF
+    /Gx CCR-I Rate
+    /Gx CCR-T Rate
+    /Gx CCR-U Rate
+    /Number Of Active Policy Control (Gx) Rules
+    /Sent CCR-I to PCRF
+    /Sent CCR-T to PCRF"
+    /Sent CCR-U to PCRF"
+/gx-listener
+  /values
+    /Fail processing RAR from PCRF
+    /Fail to Send RAA to PCRF
+    /Incoming CCA-I from PCRF
+    /Incoming CCA-I from PCRF Rate
+    /Incoming CCA-T from PCRF
+    /Incoming CCA-T from PCRF Rate
+    /Incoming CCA-U from PCRF
+    /Incoming CCA-U from PCRF Rate
+    /Incoming RAR from PCRF
+    /Incoming RAR from PCRF Rate
+    /Received Error in CCR-I from PCRF
+    /Received Error in CCR-T from PCRF
+    /Received Error in CCR-U from PCRF
+    /Received Timeout on GX CCR-I
+    /Received Timeout on GX CCR-T
+    /Received Timeout on GX CCR-U
+    /Sent RAA to PCRF
+    /Sent RAA to PCRF Rate
+/gy-client
+  /values
+    /Fail to send CCR-I to OCS
+    /Fail to send CCR-T to OCS
+    /Fail to send CCR-U to OCS
+"/gy-client/values/Gy Ccr-I Rate"
+"/gy-client/values/Gy Ccr-T Rate"
+"/gy-client/values/Gy Ccr-U Rate"
+"/gy-client/values/Number Of Active Online Charging (Gy) Rules"
+"/gy-client/values/Sent CCR-I to OCS"
+"/gy-client/values/Sent CCR-T to OCS"
+"/gy-client/values/Sent CCR-U to OCS"
+"/gy-listener/values/Fail processing ASR from OCS"
+"/gy-listener/values/Fail processing RAR from OCS"
+"/gy-listener/values/Fail to Send ASA to OCS"
+"/gy-listener/values/Fail to Send RAA to OCS"
+"/gy-listener/values/Gy Incoming ASR Rate"
+"/gy-listener/values/Gy Incoming RAR Rate"
+"/gy-listener/values/Gy Sent ASA Rate"
+"/gy-listener/values/Gy Sent RAA Rate"
+"/gy-listener/values/Incoming ASR from OCS"
+"/gy-listener/values/Incoming CCA-I from OCS"
+"/gy-listener/values/Incoming CCA-I from OCS Rate"
+"/gy-listener/values/Incoming GY CCA-T from OCS"
+"/gy-listener/values/Incoming GY CCA-T from OCS Rate"
+"/gy-listener/values/Incoming GY CCA-U from OCS"
+"/gy-listener/values/Incoming GY CCA-U from OCS Rate"
+"/gy-listener/values/Incoming RAR from OCS"
+"/gy-listener/values/Received Error in CCR-I from OCS"
+"/gy-listener/values/Received Error in CCR-T from OCS"
+"/gy-listener/values/Received Error in CCR-U from OCS"
+"/gy-listener/values/Received Timeout on GY CCR-I"
+"/gy-listener/values/Received Timeout on GY CCR-T"
+"/gy-listener/values/Received Timeout on GY CCR-U"
+"/gy-listener/values/Sent ASA to OCS"
+"/gy-listener/values/Sent RAA to OCS"
+"/sd-client/values/Fail to send CCR-T to PCRF"
+"/sd-client/values/Fail to send CCR-U to PCRF"
+"/sd-client/values/Fail to send CCR/RAA/TSA PCRF"
+"/sd-client/values/Number Of Active Policy Control (Sd) Rules"
+"/sd-client/values/Sd CCR-T Rate"
+"/sd-client/values/Sd CCR-U Rate"
+"/sd-client/values/Sent CCR-T to PCRF"
+"/sd-client/values/Sent CCR-U to PCRF"
+"/sd-client/values/Total number of Sent CCR to Sd PCRF"
+"/sd-listener/values/Fail processing RAR from PCRF"
+"/sd-listener/values/Fail processing TSR from PCRF"
+"/sd-listener/values/Fail to Sent RAA to PCRF"
+"/sd-listener/values/Fail to send TSA to PCRF"
+"/sd-listener/values/Incoming CCA-T from PCRF"
+"/sd-listener/values/Incoming CCA-T from PCRF Rate"
+"/sd-listener/values/Incoming CCA-U from PCRF"
+"/sd-listener/values/Incoming CCA-U from PCRF Rate"
+"/sd-listener/values/Incoming RAR from PCRF"
+"/sd-listener/values/Incoming RAR from PCRF Rate"
+"/sd-listener/values/Incoming RAR-Termination Rate"
+"/sd-listener/values/Incoming TSR Rate"
+"/sd-listener/values/Incoming TSR from PCRF"
+"/sd-listener/values/Received Error in CCR-T from PCRF"
+"/sd-listener/values/Received Error in CCR-U from PCRF"
+"/sd-listener/values/Received Timeout on Sd CCR-T"
+"/sd-listener/values/Received Timeout on Sd CCR-U"
+"/sd-listener/values/Sent RAA to PCRF"
+"/sd-listener/values/Sent RAA to PCRF Rate"
+"/sd-listener/values/Sent TSA to PCRF"
+"/sd-listener/values/Sent TSA to PCRF Rate"
+"/sd-listener/values/Total Incoming Transactions from Sd PCRF"
+"/message-handler/values/Force session termination queue size"
+"/message-handler/values/Incoming cmts messages"
+"/message-handler/values/Incoming notification messages"
+"/message-handler/values/Incoming notification messages rate"
+"/message-handler/values/Incoming start messages"
+"/message-handler/values/Incoming start messages rate"
+"/message-handler/values/Incoming stop messages"
+"/message-handler/values/Incoming stop messages rate"
+"/message-handler/values/Incoming update messages"
+"/message-handler/values/Notification messages queue size"
+"/message-handler/values/Termination requests"
+"/message-handler/values/Termination requests rate"
+"/message-handler/values/Total incoming messages"
+"/message-handler/values/Total incoming messages rate"
+"/message-handler/values/Total skip nat stop messages"
